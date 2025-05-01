@@ -10,6 +10,4 @@ kind: xCell
 metadata:
   name: xcell
 spec:
-  parameters:
-    name: k
-    age: 10
+  region: us-east-1

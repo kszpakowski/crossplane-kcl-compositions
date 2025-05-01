@@ -31,6 +31,7 @@ _schema: ObjectSchema = {
             properties: {
                 region: StringSchema {}
             }
+            required: ["region"]
         }
         status: ObjectSchema {
             properties: {}
