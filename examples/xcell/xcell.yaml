@@ -1,0 +1,15 @@
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: kcl-function
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-kcl:latest
+---
+apiVersion: infra.kszpakowski.com/v1alpha1
+kind: xCell
+metadata:
+  name: xcell
+spec:
+  parameters:
+    name: k
+    age: 10
