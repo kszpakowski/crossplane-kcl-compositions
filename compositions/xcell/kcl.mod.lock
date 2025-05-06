@@ -3,3 +3,5 @@
     name = "crossplane"
     full_name = "crossplane_0.0.1"
     version = "0.0.1"
+    url = "https://github.com/kszpakowski/kcl-modules"
+    commit = "6cd0f46"

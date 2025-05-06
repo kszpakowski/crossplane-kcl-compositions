@@ -1,7 +1,13 @@
 # Crossplane KCL compositions
 
-Add dependency to schemas
-`kcl mod add  --path ../../schemas/crossplane`
+Add models dependency from github
+
+```sh
+sudo kcl mod add crossplane --git https://github.com/kszpakowski/kcl-modules
+```
 
 Render and apply composition
-`kcl . | kubectl apply -f -`
+
+```sh
+kcl . | kubectl apply -f -
+```
