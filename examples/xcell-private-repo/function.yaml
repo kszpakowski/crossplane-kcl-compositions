@@ -1,0 +1,99 @@
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: fn-kcl
+spec:
+  deploymentTemplate:
+    spec:
+      selector: {}
+      template:
+        spec:
+          volumes:
+            - name: git-config
+              emptyDir: {}
+            - name: github-app-secret
+              secret:
+                secretName: github-app-credentials
+                items:
+                  - key: private_key
+                    path: private_key.pem
+          containers:
+            - name: package-runtime
+              volumeMounts:
+                - name: git-config
+                  mountPath: /.config
+            - name: github-auth-sidecar
+              image: bitnami/git
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  refresh_token() {
+                    now=$(date +%s)
+                    exp=$((now + 540)) # 9 minutes
+                    header=$(echo -n '{"alg":"RS256","typ":"JWT"}' | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+                    payload=$(echo -n "{\"iat\":$now,\"exp\":$exp,\"iss\":$APP_ID}" | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+                    unsigned_token="$header.$payload"
+                    signature=$(echo -n "$unsigned_token" | openssl dgst -sha256 -sign /secrets/private_key.pem | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+                    jwt="$unsigned_token.$signature"
+
+                    token_response=$(curl -s -X POST -H "Authorization: Bearer $jwt" -H "Accept: application/vnd.github+json" https://api.github.com/app/installations/$APP_INSTALLATION_ID/access_tokens)
+                    token=$(echo "$token_response" | grep -oP '"token":\s*"\K[^"]*')
+                    if [ -z "$token" ]; then
+                      echo "Failed to get token: $token_response"
+                      exit 1
+                    fi
+                    mkdir /config/git
+                    cat <<EOF > /config/git/config
+                  [credential "https://github.com"]
+                    username = infra-bot
+                    helper = "!f() { test \"\$1\" = get && echo \"password=${token}\"; }; f"
+                  EOF
+                    echo "GitHub token refreshed at $(date)"
+                  }
+
+                  while true; do
+                    refresh_token
+                    sleep 3300 # 55 minutes
+                  done
+              env:
+                - name: APP_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: github-app-credentials
+                      key: app_id
+                - name: APP_INSTALLATION_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: github-app-credentials
+                      key: installation_id
+              volumeMounts:
+                - name: git-config
+                  mountPath: /config
+                - name: github-app-secret
+                  mountPath: /secrets
+                  readOnly: true
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: kcl-function
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-kcl:latest
+  runtimeConfigRef:
+    name: fn-kcl
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-app-credentials
+  namespace: crossplane-system
+type: Opaque
+stringData:
+  private_key: |
+    -----BEGIN RSA PRIVATE KEY-----
+    ...
+    -----END RSA PRIVATE KEY-----
+  app_id: "..."
+  installation_id: "..."
+---
