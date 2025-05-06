@@ -10,3 +10,5 @@ schema ObjectSchema:
     type: str = "object"
     properties: {str: OpenApiType}
     required?: [str]
+    "x-kubernetes-preserve-unknown-fields"?: bool
+    

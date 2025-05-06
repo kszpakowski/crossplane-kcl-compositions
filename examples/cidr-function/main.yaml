@@ -1,0 +1,14 @@
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-cidr
+spec:
+  package: xpkg.upbound.io/upbound/function-cidr:v0.5.0
+---
+apiVersion: infra.kszpakowski.com/v1alpha1
+kind: xCell
+metadata:
+  name: xcell
+spec:
+  region: us-east-1
+  cidrBlock: 10.0.0.0/20

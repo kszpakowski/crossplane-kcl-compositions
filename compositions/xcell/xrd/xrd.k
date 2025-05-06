@@ -30,11 +30,17 @@ _schema: ObjectSchema = {
         spec: ObjectSchema {
             properties: {
                 region: StringSchema {}
+                cidrBlock: StringSchema {}
             }
             required: ["region"]
         }
         status: ObjectSchema {
-            properties: {}
+            properties: {
+                atFunction: ObjectSchema {
+                    properties: {}
+                    "x-kubernetes-preserve-unknown-fields" = True
+                }
+            }
         }
     }
 }
